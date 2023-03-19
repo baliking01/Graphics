@@ -1,0 +1,20 @@
+Polygon elements:
+	Vertices:
+		x, y, z components for vec3
+
+	Texture Coordinates(UV):
+		u, v coordinates for 2d texture mapping
+	
+	Surface Normals:
+		x, y, z for normal vectors
+
+	Faces:
+		A list of triangles each of which is defined by x, y ,z componenets
+
+		In order to eliminate code repetition we store the index of each vertex
+		of the polygon that defines these triangles along with the index of texture
+		coordinates and surface normals.
+
+		Thus the final polygon will be composed of triangles that are in turn defined
+		by vertices. The surface normals correspond to these triangles and not to
+		individual vertices.
