@@ -1,4 +1,5 @@
 #include "scene.h"
+#include <math.h>
 
 void drawBorder(Scene* scene, float (*vdata)[3], unsigned int (*faces)[4]){
     glLineWidth(2);
@@ -42,6 +43,8 @@ void initScene(Scene* scene, unsigned int width, unsigned int height, unsigned i
     scene->gridWidth = width += 2;
     scene->gridHeight = height += 2;
     scene->gridDepth = depth += 2;
+
+    scene->neighbourCount = M;
     
     scene->grid = (int***)calloc(scene->gridWidth, sizeof(int**));
     scene->gridBuffer = (int***)calloc(scene->gridWidth, sizeof(int**));
@@ -70,6 +73,18 @@ void fillGrid(Scene* scene, int spawnRadius, int spawnChance){
     }
 }
 
+void clearGrid(Scene* scene){
+    // Initialize with random members
+    for(unsigned int i = 1; i < scene->gridWidth - 1; i++){
+        for(unsigned int j = 1; j < scene->gridHeight - 1; j++){
+            for(unsigned int k = 1; k < scene->gridDepth - 1; k++){
+                scene->gridBuffer[i][j][k] = 0;
+                scene->grid[i][j][k] = 0;
+            }
+        }
+    }
+}
+
 void renderGrid(Scene* scene){
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -79,13 +94,18 @@ void renderGrid(Scene* scene){
                 glPushMatrix();
                 for(unsigned int k = 1; k < scene->gridDepth - 1; k++){
                     if(scene->grid[i][j][k]){
-                        switch(scene->grid[i][j][k]){
-                            case 1: glColor3f(1, 0.4, 0); break;
-                            case 2: glColor3f(1, 0.6, 0); break;
-                            case 3: glColor3f(1, 0.8, 0); break;
-                            case alive: glColor3f(1, 1, 0); break;
-                            default: break;
-                        }
+                        //glColor3f(1, scene->grid[i][j][k]*(1.0/alive), 0);
+                        glColor3f((double)i/scene->gridWidth, (double)j/scene->gridHeight, (double)k/scene->gridDepth);
+                        /*glColor3f(abs(i-(double)scene->gridWidth/2)/(double)scene->gridWidth,
+                            abs(j-(double)scene->gridHeight/2)/(double)scene->gridHeight,
+                            abs(k-(double)scene->gridDepth/2)/(double)scene->gridDepth);*/
+
+                        /*glColor3f(sqrt((i-(double)scene->gridWidth/2)*(i-(double)scene->gridWidth/2) + 
+                            (j-(double)scene->gridHeight/2) * (j-(double)scene->gridHeight/2) +
+                            (k-(double)scene->gridDepth/2) * (k-(double)scene->gridDepth/2))/scene->gridDepth, (double)i/scene->gridWidth, (double)j/scene->gridHeight);*/
+                        /*glColor3f(sqrt((i-(double)scene->gridWidth/2)*(i-(double)scene->gridWidth/2) + 
+                            (j-(double)scene->gridHeight/2) * (j-(double)scene->gridHeight/2) +
+                            (k-(double)scene->gridDepth/2) * (k-(double)scene->gridDepth/2))/scene->gridDepth, 0.2 ,0.3);*/
                         drawCube(scene->vertices, scene->faces);
                     }
                     glTranslatef(0, 0, 2);
@@ -114,26 +134,7 @@ void updateGrid(Scene* scene){
         for(unsigned int j = 1; j < scene->gridHeight - 1; j++){
             for(unsigned int k = 1; k < scene->gridDepth - 1; k++){
                 // Count neighours in 3x3 area around cell
-                n = 0;
-                for(int offset = 1; offset >= -1; offset--){
-                    // Top row
-                    n += (scene->gridBuffer[i-1][j+1][k-offset] == alive);
-                    n += (scene->gridBuffer[i][j+1][k-offset] == alive);
-                    n += (scene->gridBuffer[i+1][j+1][k-offset] == alive);
-
-                    // Middle row
-                    n += (scene->gridBuffer[i-1][j][k-offset] == alive);
-                    n += (scene->gridBuffer[i][j][k-offset] == alive);
-                    n += (scene->gridBuffer[i+1][j][k-offset] == alive);
-
-                    // Bottom row
-                    n += (scene->gridBuffer[i-1][j-1][k-offset] == alive);
-                    n += (scene->gridBuffer[i][j-1][k-offset] == alive);
-                    n += (scene->gridBuffer[i+1][j-1][k-offset] == alive);
-                }
-                // We also counted the current cell, so we need to substract it.
-                // Even if it was 0 this ensures that we have an accurate neighbour count
-                n -= (scene->gridBuffer[i][j][k] > 0);
+                n = countAdj(scene, i, j, k);
                 
                 // Insert rule conditions
                 // Determine the next state of the cell
@@ -143,11 +144,44 @@ void updateGrid(Scene* scene){
 
                 // Rule B3678/S34678
                 //scene->grid[i][j][k] = (scene->gridBuffer[i][j][k] && !(((n<3) || (n>8))) && n != 5) ^ (!scene->gridBuffer[i][j][k] && ((n == 3) || (n >= 6 && n <= 8)));
-                
+
+
+                // Rule 4/4/5/M
+                /*
                 if(scene->gridBuffer[i][j][k] == dead && n == 4){
                     scene->grid[i][j][k] = alive;
                 }
                 else if(scene->gridBuffer[i][j][k] == alive && n == 4){
+                    scene->grid[i][j][k] = alive;
+                }
+                else if(scene->gridBuffer[i][j][k]){
+                    scene->grid[i][j][k] = scene->gridBuffer[i][j][k] - 1;
+                }*/
+
+
+                // Rule 2,6,9/4,6,8,9/10/M
+                /*if((scene->gridBuffer[i][j][k] == dead && n == 4)
+                    || (scene->gridBuffer[i][j][k] == dead && n == 6)
+                    || (scene->gridBuffer[i][j][k] == dead && n == 8)
+                    || (scene->gridBuffer[i][j][k] == dead && n == 9)){
+                    scene->grid[i][j][k] = alive;
+                }
+                else if((scene->gridBuffer[i][j][k] == alive && n == 2)
+                        || (scene->gridBuffer[i][j][k] == alive && n == 6)
+                        || (scene->gridBuffer[i][j][k] == alive && n == 9)){
+                    scene->grid[i][j][k] = alive;
+                }
+                else if(scene->gridBuffer[i][j][k]){
+                    scene->grid[i][j][k] = scene->gridBuffer[i][j][k] - 1;
+                }*/
+
+                // Rule 0-6/1,3/2/VN
+                if((scene->gridBuffer[i][j][k] == dead && n == 3)){
+                    scene->grid[i][j][k] = alive;
+                }
+                else if((scene->gridBuffer[i][j][k] == alive && n == 4)
+                    || (scene->gridBuffer[i][j][k] == alive && n == 5)
+                    || (scene->gridBuffer[i][j][k] == alive && n == 6)){
                     scene->grid[i][j][k] = alive;
                 }
                 else if(scene->gridBuffer[i][j][k]){

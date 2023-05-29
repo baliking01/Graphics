@@ -76,7 +76,10 @@ void handleEvents(App* app){
            	switch (event.key.keysym.scancode) {
            		case SDL_SCANCODE_ESCAPE: app->need_run = false; break;
                 //case SDL_SCANCODE_S: updateScene(&elapsedTime, &prevTime, &currentTime, &scene); break;
-                case SDL_SCANCODE_R: fillGrid(&app->scene, 10, 5); break;
+                case SDL_SCANCODE_R: fillGrid(&app->scene, 1, 5); break;
+                case SDL_SCANCODE_C: clearGrid(&app->scene); break;
+                case SDL_SCANCODE_N: app->scene.neighbourCount = VN; break;
+                case SDL_SCANCODE_M: app->scene.neighbourCount = M; break;
            		default: break;
             }
             break;
@@ -118,17 +121,17 @@ void renderApp(App* app){
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	glPushMatrix();
-        // Update camera
-        updateCamera(&app->scene, &app->camera);
+  // Update camera
+    updateCamera(&app->scene, &app->camera);
 
-        //Update scene
-        updateScene(&app->elapsedTime, &app->prevTime, &app->currentTime, &app->scene);
+  //Update scene
+    updateScene(&app->elapsedTime, &app->prevTime, &app->currentTime, &app->scene);
 
-        //Render scene
-	    draw_origin();
-        drawBorder(&app->scene, vcube, faces);
-        renderGrid(&app->scene);
-  	glPopMatrix();
+    //Render scene
+  	draw_origin();
+    drawBorder(&app->scene, vcube, faces);
+    renderGrid(&app->scene);
+    glPopMatrix();
     SDL_GL_SwapWindow(app->window);
 }
 

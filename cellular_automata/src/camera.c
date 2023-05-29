@@ -27,11 +27,6 @@ void setScale(Camera* camera, double scaleRatio){
 // Move the camera to the viewing position (correct distance away from rendered scene)
 void normalizeCamera(Scene* scene){
     unsigned int scale = getMax(scene->gridWidth, scene->gridHeight, scene->gridDepth) * 1.6;
-	glPointSize(3);
-	glBegin(GL_POINTS);
-	glColor3f(1, 0, 0);
-	glVertex3f(0, 0, 0);
-	glEnd();
     glScalef(0.9/scale, 0.9/scale, 0.9/scale);
     // Move tha camera back and adjust for cell size (2) and array padding (2)
 	glTranslatef(-((double)scene->gridWidth - 3), -((double)scene->gridHeight - 3), -((double)scene->gridDepth - 3));
